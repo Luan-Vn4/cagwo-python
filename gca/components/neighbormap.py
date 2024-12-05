@@ -1,16 +1,16 @@
 import numpy as np
 from gca.automaton.cagwo import WolfCell, NeighborMap
-from gca.typing.typing import Vector
+from gca.project_types.math_typing import Vector
 
 
 class LSHNeighborMap(NeighborMap):
 
     def __init__(self, dimension: int, nbits: int) -> None:
         super().__init__()
+        self.dimension = dimension
         self._normals: list[Vector]  = [Vector(np.random.normal(0, 1, dimension)) for _ in range(nbits)]
         self._hash_bucket_map: dict[Vector, list["WolfCell"]] = dict()
         self._id_bucket_map: dict[int, tuple[Vector, list["WolfCell"]]] = dict()
-        self.dimension = dimension
         self.nbits = nbits
 
     def __getitem__(self, args: tuple["WolfCell", int]) -> list["WolfCell"]:

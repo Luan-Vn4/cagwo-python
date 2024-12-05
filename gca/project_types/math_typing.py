@@ -21,6 +21,9 @@ class Vector:
     def dimension(self) -> int:
         return self._vector.shape[0]
 
+    def as_np_array(self):
+        return self._vector.copy()
+
     def __getitem__(self, key: int) -> Real:
         return Real(self._vector[key])
 

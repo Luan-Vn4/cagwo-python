@@ -1,7 +1,7 @@
 from inspect import signature
 from typing import Callable, Any
 import numpy as np
-from gca.typing import Real, Vector
+from gca.project_types import Real, Vector
 
 
 def get_qnt_args(function: Callable[[Any], Any]) -> int:

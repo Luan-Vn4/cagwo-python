@@ -1,6 +1,6 @@
 from abc import abstractmethod, ABC
-from gca.typing.typing import Real, Vector
-from typing import TypeAlias, Callable, Sequence, TypeVar, NamedTuple
+from gca.project_types.math_typing import Real, Vector
+from typing import TypeAlias, Callable, Sequence, TypeVar, NamedTuple, Optional
 from inspect import signature
 from random import random
 import numpy as np
@@ -14,12 +14,17 @@ Neighborhood: TypeAlias = list["WolfCell"]
 class WolfCell:
 
 	# ACCESS
-	def __init__(self, id_: int, index: Vector, obj_func: ObjFunc):
+	def __init__(self, id_: int, index: Vector, obj_func: ObjFunc, is_unpacking_needed: bool):
 		self.id = id_
+		self._is_unpacking_needed = is_unpacking_needed
 		self._obj_func = obj_func
 		self._index: Vector = index
 		self._verify_index_dimension(index)
-		self.state: Real = obj_func(*self._index)
+
+		if self._is_unpacking_needed:
+			self.state = obj_func(*index)
+		else:
+			self.state = obj_func(index.as_np_array())
 
 	@property
 	def index(self) -> Vector: return self._index
@@ -28,10 +33,15 @@ class WolfCell:
 	def index(self, value: Vector) -> None:
 		self._verify_index_dimension(value)
 		self._index = value # type: ignore
-		self.state = self._obj_func(*value)
+		if self._is_unpacking_needed:
+			self.state = self._obj_func(*value)
+		else:
+			self.state = self._obj_func(value.as_np_array())
 
 	## METHODS
 	def _verify_index_dimension(self, index: Vector):
+		if not self._is_unpacking_needed: return
+
 		if len(signature(self._obj_func).parameters) != self.index.dimension:
 			msg = (f"Function {self._obj_func} has a different number of arguments than " + 
 				   f"the cell's index dimension {index}")
@@ -85,15 +95,19 @@ class CAGWO:
 	def __init__(self,
 	 	qnt_cells: int,
 		obj_func: ObjFunc,
+		dimension: Optional[int],
 		n_map: "NeighborMap",
 		lower_bound: tuple[Real, ...] | tuple[float, ...],
 		upper_bound: tuple[Real, ...] | tuple[float, ...],
 		max_interations: int
 	):
-		self.grid_dimension: int = get_qnt_args(obj_func)
+		self.grid_dimension: int = get_qnt_args(obj_func) if dimension is None else dimension
+		# Check if unpacking is needed for obj. function based on whether a dimension is provided
+		self._is_unpacking_needed: bool = dimension is None
+		print(self._is_unpacking_needed)
 		self.upper_bound, self.lower_bound = verify_bounds(lower_bound, upper_bound, self.grid_dimension)
 		self._cells: list[WolfCell] = self._generate_cells(qnt_cells, self.grid_dimension, obj_func,
-														   lower_bound, upper_bound)
+														   self._is_unpacking_needed, lower_bound, upper_bound)
 		self._alpha, self._beta, self._delta = self._init_three_best_solutions(self._cells)
 		self._n_map: "NeighborMap" = self._map_cells(n_map, self._cells)
 		self._coef_a: float = 1
@@ -106,6 +120,7 @@ class CAGWO:
 		qnt_cells: int,
 		grid_dimension: int,
 		obj_func: ObjFunc,
+		is_unpacking_needed: bool,
 		lower_bound: tuple[Real, ...] | tuple[float, ...],
 		upper_bound: tuple[Real, ...] | tuple[float, ...],
 	) -> list[WolfCell]:
@@ -115,7 +130,7 @@ class CAGWO:
 		for i in range(qnt_cells):
 			random_indexes.append(Vector(np.random.uniform(lower_bound, upper_bound, grid_dimension)))
 
-		return [WolfCell(i, index, obj_func) for i, index in enumerate(random_indexes)]
+		return [WolfCell(i, index, obj_func, is_unpacking_needed) for i, index in enumerate(random_indexes)]
 
 	@staticmethod
 	def _map_cells(n_map: "NeighborMap", cells: list["WolfCell"]) -> "NeighborMap":
@@ -199,6 +214,13 @@ class CAGWO:
 
 				if cell.state < self._delta.state:
 					self._delta = cell
+
+	def run_all(self):
+		remaining: int = (self.max_iterations-1) - self.iteration
+		self.run(remaining)
+
+	def in_progress(self) -> bool:
+		return self.iteration < self.max_iterations-1
 
 	@property
 	def solutions(self) -> tuple[Solution, Solution, Solution]:
