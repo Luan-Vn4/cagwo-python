@@ -1,15 +1,13 @@
 from abc import abstractmethod, ABC
-from gca.project_types.math_typing import Real, Vector
-from typing import TypeAlias, Callable, Sequence, TypeVar, NamedTuple, Optional
 from inspect import signature
 from random import random
+from typing import TypeAlias, Callable, Sequence, TypeVar, Optional
 import numpy as np
+from gca.project_types import Real, Vector, ObjFunc, Solution, MetaHeuristic, SearchAgentRecord
 from gca.utils import get_qnt_args, verify_bounds, adjust_to_bounds
 
 T = TypeVar("T")
-ObjFunc: TypeAlias = Callable[..., Real]
 Neighborhood: TypeAlias = list["WolfCell"]
-
 
 class WolfCell:
 
@@ -84,12 +82,7 @@ class NeighborMap(ABC):
 		pass
 
 
-class Solution(NamedTuple):
-	solution: Real
-	args: tuple[Real, ...]
-
-
-class CAGWO:
+class CAGWO(MetaHeuristic):
 
 	# ACCESS
 	def __init__(self,
@@ -161,6 +154,10 @@ class CAGWO:
 	@property
 	def _coef_C(self) -> Real:
 		return Real(2 * random())
+
+	@property
+	def current_search_agents(self) -> tuple[SearchAgentRecord, ...]:
+		return tuple([SearchAgentRecord(cell.id, cell.state, cell.index) for cell in self._cells])
 
 	# METHODS
 	def _update_coef_a(self) -> None:
