@@ -1,8 +1,10 @@
 from abc import abstractmethod, ABC
 from inspect import signature
-from random import random
 from typing import TypeAlias, Callable, Sequence, TypeVar, Optional
+
 import numpy as np
+
+from gca.algorithms.gwo import GWOContext
 from gca.project_types import Real, Vector, ObjFunc, Solution, MetaHeuristic, SearchAgentRecord
 from gca.utils import get_qnt_args, verify_bounds, adjust_to_bounds
 
@@ -48,9 +50,9 @@ class WolfCell:
 	def __getitem__(self, key: int) -> Real:
 		return self.index[key]
 
-	def update_state(self, n_map: "NeighborMap", transition_func: Callable[[Sequence[Vector]], Vector]):
+	def update_state(self, n_map: "NeighborMap", transition_func: Callable[[Vector, Sequence[Vector]], Vector]):
 		neighbors: list[Vector] = [x._index for x in n_map[self, 8]]
-		self.index = transition_func(neighbors)
+		self.index = transition_func(self.index, neighbors)
 		n_map.map(self)
 
 	def __eq__(self, other: "WolfCell") -> bool:
@@ -94,19 +96,19 @@ class CAGWO(MetaHeuristic):
 		upper_bound: tuple[Real, ...] | tuple[float, ...],
 		max_interations: int
 	):
+		self.qnt_cells = qnt_cells
 		self.grid_dimension: int = get_qnt_args(obj_func) if dimension is None else dimension
-		# Check if unpacking is needed for obj. function based on whether a dimension is provided
-		self._is_unpacking_needed: bool = dimension is None
-		print(self._is_unpacking_needed)
 		self.upper_bound, self.lower_bound = verify_bounds(lower_bound, upper_bound, self.grid_dimension)
+
+
+		# Check if unpacking is needed for obj. function based on whether a dimension is provided
+		is_unpacking_needed: bool = dimension is None
 		self._cells: list[WolfCell] = self._generate_cells(qnt_cells, self.grid_dimension, obj_func,
-														   self._is_unpacking_needed, lower_bound, upper_bound)
+														   is_unpacking_needed, lower_bound, upper_bound)
+
 		self._alpha, self._beta, self._delta = self._init_three_best_solutions(self._cells)
 		self._n_map: "NeighborMap" = self._map_cells(n_map, self._cells)
-		self._coef_a: float = 2
-		self.iteration = 0
-		self.max_iterations = max_interations
-
+		self._gwo_context = GWOContext(max_interations)
 
 	@staticmethod
 	def _generate_cells(
@@ -146,28 +148,17 @@ class CAGWO(MetaHeuristic):
 				delta = cell
 
 		return alpha, beta, delta
-	
-	@property
-	def _coef_A(self) -> Real:
-		return Real((2 * self._coef_a * random()) - self._coef_a)
-
-	@property
-	def _coef_C(self) -> Real:
-		return Real(2 * random())
 
 	@property
 	def current_search_agents(self) -> tuple[SearchAgentRecord, ...]:
 		return tuple([SearchAgentRecord(cell.id, cell.state, cell.index) for cell in self._cells])
 
 	# METHODS
-	def _update_coef_a(self) -> None:
-		self._coef_a = 2 - self.iteration/self.max_iterations
-
 	def _distance(self, this: Vector, other: Vector) -> Vector:
-		return abs((other * self._coef_C) - this)
+		return abs((other * self._gwo_context.coeff_C) - this)
 
 	def _next_position(self, this: Vector, other: Vector) -> Vector:
-		return other - (self._distance(this, other) * self._coef_A)
+		return other - (self._distance(this, other) * self._gwo_context.coeff_A)
 
 	def _real_next_position(self, vector: Vector, neighbors: Sequence[Vector]):
 		to_alpha: Vector = self._next_position(vector, self._alpha.index)
@@ -189,9 +180,7 @@ class CAGWO(MetaHeuristic):
 
 	def run(self, i: int = 1) -> None:
 		for _ in range(0, i):
-			if self.iteration+1 >= self.max_iterations: return
-
-			self._update_coef_a()
+			if not self._gwo_context.in_progress(): return
 
 			for cell in self._cells:
 				cell.update_state(self._n_map, self._real_next_position)
@@ -210,14 +199,13 @@ class CAGWO(MetaHeuristic):
 				if cell.state < self._delta.state:
 					self._delta = cell
 
-			self.iteration += 1
+			self._gwo_context.increment_iteration()
 
 	def run_all(self):
-		remaining: int = (self.max_iterations-1) - self.iteration
-		self.run(remaining)
+		self.run(self._gwo_context.remaining_iterations())
 
 	def in_progress(self) -> bool:
-		return self.iteration < self.max_iterations-1
+		return self._gwo_context.in_progress()
 
 	@property
 	def solutions(self) -> tuple[Solution, Solution, Solution]:

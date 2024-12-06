@@ -25,6 +25,9 @@ class MetaHeuristic(ABC):
 
     @abstractmethod
     def run_all(self) -> None:
+        """
+        Runs all remaining iterations
+        """
         pass
 
     @abstractmethod
@@ -32,12 +35,14 @@ class MetaHeuristic(ABC):
         pass
 
     @abstractmethod
-    def solutions(self) -> tuple[Solution, Solution, Solution]:
+    def solutions(self) -> tuple[Solution, ...]:
         """
-        Returns the three best solutions at the moment
+        Returns the best solution. In some cases, it might return more than one, if specified by the
+        algorithm
         """
         pass
 
     @abstractmethod
     def current_search_agents(self) -> tuple[SearchAgentRecord, ...]:
         pass
+
