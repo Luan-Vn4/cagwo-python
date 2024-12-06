@@ -110,7 +110,7 @@ class CAGWO:
 														   self._is_unpacking_needed, lower_bound, upper_bound)
 		self._alpha, self._beta, self._delta = self._init_three_best_solutions(self._cells)
 		self._n_map: "NeighborMap" = self._map_cells(n_map, self._cells)
-		self._coef_a: float = 1
+		self._coef_a: float = 2
 		self.iteration = 0
 		self.max_iterations = max_interations
 
@@ -164,7 +164,7 @@ class CAGWO:
 
 	# METHODS
 	def _update_coef_a(self) -> None:
-		self._coef_a = 1 - self.iteration/self.max_iterations
+		self._coef_a = 2 - self.iteration/self.max_iterations
 
 	def _distance(self, this: Vector, other: Vector) -> Vector:
 		return abs((other * self._coef_C) - this)
@@ -172,30 +172,28 @@ class CAGWO:
 	def _next_position(self, this: Vector, other: Vector) -> Vector:
 		return other - (self._distance(this, other) * self._coef_A)
 
-	def _real_next_position(self, neighbors: Sequence[Vector]):
-		size: int = len(neighbors) + 3
+	def _real_next_position(self, vector: Vector, neighbors: Sequence[Vector]):
+		to_alpha: Vector = self._next_position(vector, self._alpha.index)
+		to_beta: Vector = self._next_position(vector, self._beta.index)
+		to_delta: Vector = self._next_position(vector, self._delta.index)
+		to_neighbors: list[Vector] = [self._next_position(vector, neighbor) for neighbor in neighbors]
 
-		alpha: Vector = self._alpha.index
-		beta: Vector = self._beta.index
-		delta: Vector = self._delta.index
+		alpha_weight = Real(0.30)
+		beta_weight = Real(0.25)
+		delta_weight = Real(0.20)
+		neighbors_weight = Real(0.25 / len(neighbors))
 
-		alpha_weight = Real(size * 0.30)
-		beta_weight = Real(size * 0.20)
-		delta_weight = Real(size * 0.10)
-		neighbors_weight = Real(size * (0.40 / len(neighbors)))
+		to_neighbors_sum: Vector = Vector.sum_vectors([position * neighbors_weight for position in to_neighbors])
 
-		neighbors_sum: Vector = Vector.sum_vectors([neighbor * neighbors_weight for neighbor in neighbors])
-
-		next_pos: Vector = (Vector.sum_vectors((alpha * alpha_weight, beta * beta_weight, delta * delta_weight,
-							neighbors_sum)) / Real(size))
+		next_pos: Vector = (Vector.sum_vectors((to_alpha * alpha_weight, to_beta * beta_weight,
+												to_delta * delta_weight, to_neighbors_sum)))
 
 		return adjust_to_bounds(self.lower_bound, self.upper_bound, next_pos)
 
-	def run(self, i: int) -> None:
+	def run(self, i: int = 1) -> None:
 		for _ in range(0, i):
 			if self.iteration+1 >= self.max_iterations: return
 
-			self.iteration += 1
 			self._update_coef_a()
 
 			for cell in self._cells:
@@ -214,6 +212,8 @@ class CAGWO:
 
 				if cell.state < self._delta.state:
 					self._delta = cell
+
+			self.iteration += 1
 
 	def run_all(self):
 		remaining: int = (self.max_iterations-1) - self.iteration
