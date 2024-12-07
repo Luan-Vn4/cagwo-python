@@ -5,7 +5,7 @@ from gca.project_types.math_typing import Vector
 
 class LSHNeighborMap(NeighborMap):
 
-    def __init__(self, dimension: int, nbits: int) -> None:
+    def __init__(self, dimension: int, nbits: int = 64) -> None:
         super().__init__()
         self.dimension = dimension
         self._normals: list[Vector]  = [Vector(np.random.normal(0, 1, dimension)) for _ in range(nbits)]

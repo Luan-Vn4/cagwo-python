@@ -34,6 +34,7 @@ class MetaHeuristic(ABC):
     def in_progress(self) -> bool:
         pass
 
+    @property
     @abstractmethod
     def solutions(self) -> tuple[Solution, ...]:
         """
@@ -42,6 +43,7 @@ class MetaHeuristic(ABC):
         """
         pass
 
+    @property
     @abstractmethod
     def current_search_agents(self) -> tuple[SearchAgentRecord, ...]:
         pass
