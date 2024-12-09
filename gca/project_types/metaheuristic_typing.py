@@ -1,9 +1,10 @@
 from typing import TypeAlias, Callable, NamedTuple
-from gca.project_types import Real, Vector
 from abc import ABC, abstractmethod
+from numpy.typing import NDArray
+from gca.project_types import Real, Vector
 
 
-ObjFunc: TypeAlias = Callable[..., Real]
+ObjFunc: TypeAlias = Callable[[NDArray[Real]], Real]
 
 
 class Solution(NamedTuple):

@@ -1,6 +1,7 @@
 from inspect import signature
 from typing import Callable, Any
 import numpy as np
+from numpy.typing import NDArray
 from gca.project_types import Real, Vector
 
 
@@ -21,13 +22,13 @@ def adjust_to_bounds(
     upper_bound: tuple[Real, ...] | tuple[float, ...],
     vector: Vector,
 ) -> Vector:
-    result: list[Real] = [np.float64(0)]*len(vector)
+    result: NDArray[Real] = np.zeros(vector.dimension, dtype=Real)
 
     for i, element in enumerate(vector):
         if element < lower_bound[i]:
-            result[i] = lower_bound[i]
+            result[i] = Real(lower_bound[i])
         elif element > upper_bound[i]:
-            result[i] = upper_bound[i]
+            result[i] = Real(upper_bound[i])
         else:
             result[i] = element
 

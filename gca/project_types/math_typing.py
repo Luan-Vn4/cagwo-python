@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import TypeAlias, Iterator, overload, Union, Sequence
 import numpy as np
 from numpy.typing import NDArray
@@ -125,3 +126,9 @@ class Vector:
         for vector in vectors:
             result += vector
         return result
+
+
+@dataclass
+class Bound:
+    lower: tuple[float, ...]
+    upper: tuple[float, ...]
