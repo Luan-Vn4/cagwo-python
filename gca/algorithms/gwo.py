@@ -116,7 +116,7 @@ class GWO(MetaHeuristic):
         to_beta: Vector = self._next_position(vector, self._beta.vector)
         to_delta: Vector = self._next_position(vector, self._delta.vector)
 
-        next_pos: Vector = (Vector.sum_vectors([to_alpha, to_beta, to_delta]) / 3)
+        next_pos: Vector = (Vector.sum_vectors([to_alpha, to_beta, to_delta]) / Real(3))
 
         return adjust_to_bounds(self.lower_bound, self.upper_bound, next_pos)
 
@@ -163,7 +163,7 @@ class GWO(MetaHeuristic):
 
 class GWOContext:
 
-    def __init__(self, max_iterations: int, coef_a: int = 2) -> None:
+    def __init__(self, max_iterations: int, coef_a: float = 2) -> None:
         self._coeff_a = coef_a
         self.iteration = 0
         self.max_iterations = max_iterations

@@ -19,12 +19,13 @@ MetaheuristicProvider: TypeAlias = Callable[[ObjFunc, Dimension, LowerBound, Upp
 @dataclass(frozen=True)
 class ObjFunctionBenchmark:
     function: FunctionRecord
+    solutions: list[Real]
     solutions_avg: Real
     solutions_std: Real
     solutions_min: Real
     solutions_max: Real
     solutions_median: Real
-    solutions_avg_per_iteration: tuple[Real, ...]
+    solutions_avg_per_iteration: list[Real]
 
 
 @dataclass(frozen=True)
@@ -62,10 +63,10 @@ def run_metaheuristic_benchmark(
             # Final solution for the e execution
             solutions[e] = meta_heuristic.solutions[0].solution
 
-        mean_value_per_iteration: list[Real] = [np.mean(best_per_iteration[i]) for i in range(iterations)]
+        mean_value_per_iteration: list[Real] = [Real(np.mean(best_per_iteration[i])) for i in range(iterations)]
         functions_benchmarks.append(
-            ObjFunctionBenchmark(obj_function, np.mean(solutions), np.std(solutions), np.min(solutions),
-                                 np.max(solutions), np.median(solutions), tuple(mean_value_per_iteration)))
+            ObjFunctionBenchmark(obj_function, list(solutions), Real(np.mean(solutions)), Real(np.std(solutions)),
+                                 np.min(solutions), np.max(solutions), Real(np.median(solutions)), mean_value_per_iteration))
 
     return MetaHeuristicBenchmark(metaheuristic_name, executions, iterations, tuple(functions_benchmarks))
 

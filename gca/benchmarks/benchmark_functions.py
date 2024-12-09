@@ -111,7 +111,7 @@ def _f7_func(x: NDArray[Real]) -> Real:
     for i in range(dim):
         prod *= np.cos(x[i] / np.sqrt(i+1))
 
-    return 1/4000 * np.sum(x**2) - prod + 1
+    return Real(1/4000 * np.sum(x**2) - prod + 1)
 
 F7 = FunctionRecord(
     name='F7',
@@ -141,12 +141,12 @@ def _f9_func(x: NDArray[Real]) -> Real:
     for i in range(dim):
         result += np.sin(x[i]) * np.sin((i+1) * x[i]**2 / np.pi)**20
 
-    return -result
+    return Real(-result)
 
 F9 = FunctionRecord(
     name="F9",
     function=_f9_func,
     dimension=30,
-    range=(-10, 10),
+    range=(0, np.pi),
     optimal_value=-4.687
 )
