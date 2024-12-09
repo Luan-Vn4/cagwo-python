@@ -46,6 +46,7 @@ class ActiveWolfState(WolfState, ABC):
 
     def _next_position(self, this: Vector, other: Vector) -> Vector:
         #print(self.name)
+        #print(self._context.coeff_a)
         return other - (self._distance(this, other) * self._context.coeff_A)
 
 
@@ -55,17 +56,19 @@ class ActiveWolfState(WolfState, ABC):
         weights: dict[WolfState, float]
     ) -> WolfState:
         expected_weight: dict[WolfState, float] = {
-            state: weight*len(states) for state, weight in weights.items()}
+            state: weight*len(states)*uniform(0.5, 1) for state, weight in weights.items()}
 
-        def randomize(min_weight: float, weight: float, max_weight: float) -> float:
-            return min(abs(min_weight - weight), abs(max_weight - weight)) * uniform(min_weight, max_weight)
+        #max_expected_weight = max(expected_weight.values())
+        #min_expected_weight = min(expected_weight.values())
 
-        max_expected_weight = max(expected_weight.values())
-        min_expected_weight = min(expected_weight.values())
-        sum_weight: float = sum([randomize(min_expected_weight,
-                                           weights.get(state, 0),
-                                           max_expected_weight)
-                                 for state in states])
+        def randomize(weight: float) -> float:
+            return (
+                weight +
+                min(abs(min(weights.values()) - weight), abs(max(weights.values()) - weight)) *
+                uniform(-1, 1)
+            )
+
+        sum_weight: float = sum([randomize(weights.get(state, 0)) for state in states])
 
         return min(expected_weight.keys(),
                    key=lambda state: abs(expected_weight[state] - sum_weight))
@@ -114,7 +117,7 @@ class ExploringState(ActiveWolfState):
         return self._weighted_expected_state(neighbors_states, state_weights)
 
     def default_weight(self) -> float:
-        return 0.392 * self._context.coeff_a
+        return 0.5 * self._context.coeff_a
 
 
 class AdvancingState(ActiveWolfState):
@@ -185,7 +188,7 @@ class AttackingState(ActiveWolfState):
         return self._weighted_expected_state(neighbors_states, state_weights)
 
     def default_weight(self) -> float:
-        return 0.8 / (self._context.coeff_a**2 + sys.float_info.min)
+        return 1 / (self._context.coeff_a**2 + sys.float_info.min)
 
 
 # === COMPONENTS ===
