@@ -94,13 +94,13 @@ def to_dataframe(benchmark: MetaHeuristicBenchmark) -> DataFrame:
         functions_max.append(func_benchmark.solutions_max)
 
     return DataFrame({
-        "Function": functions_names,
-        "Dimension": functions_dimension,
-        "LowerBound": functions_lower_bound,
-        "UpperBound": functions_upper_bound,
+        "F": functions_names,
+        "DIM": functions_dimension,
+        "LB": functions_lower_bound,
+        "UB": functions_upper_bound,
         "AVG": functions_avg,
         "STD": functions_std,
-        "MEDIAN": functions_median,
+        "MDN": functions_median,
         "MIN": functions_min,
         "MAX": functions_max
     })
